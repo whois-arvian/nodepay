@@ -222,8 +222,6 @@ async def main():
     await asyncio.sleep(10)
 
 if __name__ == '__main__':
-    show_warning()
-    print("\nAlright, we here! Using your static nodepay token.")
     try:
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
