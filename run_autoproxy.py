@@ -43,6 +43,7 @@ async def fetch_proxies():
     """Mengambil proxy dari beberapa URL."""
     proxy_urls = [
         "https://raw.githubusercontent.com/whois-arvian/depin/refs/heads/main/proxies.txt",
+        "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/socks5.txt",
         "https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&proxy_format=protocolipport&format=text"
     ]
     all_proxies = []
