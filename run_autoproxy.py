@@ -14,7 +14,7 @@ RETRIES = 60
 
 DOMAIN_API = {
     "SESSION": "http://api.nodepay.ai/api/auth/session",
-    "PING": "http://13.215.134.222/api/network/ping"
+    "PING": "https://api.nodepay.org/api/network/ping"
 }
 
 CONNECTION_STATES = {
@@ -42,8 +42,7 @@ def valid_resp(resp):
 async def fetch_proxies():
     """Mengambil proxy dari beberapa URL."""
     proxy_urls = [
-        "https://raw.githubusercontent.com/whois-arvian/depin/refs/heads/main/proxies.txt",
-        "https://raw.githubusercontent.com/monosans/proxy-list/refs/heads/main/proxies/all.txt"
+        "https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&proxy_format=protocolipport&format=text"
     ]
     all_proxies = []
 
