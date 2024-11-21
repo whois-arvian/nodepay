@@ -183,7 +183,7 @@ def remove_proxy_from_list(proxy):
     pass
 
 async def main():
-    r = requests.get("https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&proxy_format=protocolipport&format=text", stream=True)
+    r = requests.get("https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/all/data.txt", stream=True)
     if r.status_code == 200:
         with open('auto_proxies.txt', 'wb') as f:
             for chunk in r:
