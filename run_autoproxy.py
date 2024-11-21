@@ -42,8 +42,7 @@ def valid_resp(resp):
 async def fetch_proxies():
     """Mengambil proxy dari beberapa URL."""
     proxy_urls = [
-        "https://raw.githubusercontent.com/whois-arvian/depin/refs/heads/main/proxies.txt",
-        "https://raw.githubusercontent.com/monosans/proxy-list/refs/heads/main/proxies/all.txt"
+        "https://raw.githubusercontent.com/whois-arvian/depin/refs/heads/main/proxies.txt"
     ]
     all_proxies = []
 
