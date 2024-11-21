@@ -42,7 +42,8 @@ def valid_resp(resp):
 async def fetch_proxies():
     """Mengambil proxy dari beberapa URL."""
     proxy_urls = [
-        "https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&proxy_format=protocolipport&format=text"
+        "https://raw.githubusercontent.com/whois-arvian/depin/refs/heads/main/proxies.txt",
+        "https://raw.githubusercontent.com/monosans/proxy-list/refs/heads/main/proxies/all.txt"
     ]
     all_proxies = []
 
