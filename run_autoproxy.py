@@ -39,31 +39,6 @@ def valid_resp(resp):
         raise ValueError("Invalid response")
     return resp
 
-async def fetch_proxies():
-    """Mengambil proxy dari beberapa URL."""
-    proxy_urls = [
-        "https://raw.githubusercontent.com/whois-arvian/depin/refs/heads/main/proxies.txt"
-    ]
-    all_proxies = []
-
-    async with aiohttp.ClientSession() as session:
-        tasks = [fetch_url(session, url) for url in proxy_urls]
-        results = await asyncio.gather(*tasks)
-        for result in results:
-            if result:
-                all_proxies.extend(result.splitlines())  # Memisahkan setiap proxy
-    return all_proxies
-
-async def fetch_url(session, url):
-    """Mengambil data dari URL proxy."""
-    try:
-        async with session.get(url) as response:
-            response.raise_for_status()
-            return await response.text()
-    except Exception as e:
-        logger.error(f"Failed to fetch proxies from {url}: {e}")
-        return ""
-
 async def render_profile_info(proxy, token):
     global browser_id, account_info
     try:
@@ -208,23 +183,11 @@ def remove_proxy_from_list(proxy):
     pass
 
 async def main():
-    # r = requests.get("https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&proxy_format=protocolipport&format=text", stream=True)
-    # if r.status_code == 200:
-    #     with open('auto_proxies.txt', 'wb') as f:
-    #         for chunk in r:
-    #             f.write(chunk)
-    # all_proxies = load_proxies('auto_proxies.txt')
-    
-    # Ambil semua proxy dari beberapa sumber
-    all_proxies = await fetch_proxies()
-    
-    # Simpan proxy ke file
-    with open('auto_proxies.txt', 'w') as f:
-        f.write("\n".join(all_proxies))
-    
-    logger.info(f"Saved {len(all_proxies)} proxies to auto_proxies.txt")
-    
-    # Load proxies dari file
+    r = requests.get("https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&proxy_format=protocolipport&format=text", stream=True)
+    if r.status_code == 200:
+        with open('auto_proxies.txt', 'wb') as f:
+            for chunk in r:
+                f.write(chunk)
     all_proxies = load_proxies('auto_proxies.txt')
     
     # Static token is used here
