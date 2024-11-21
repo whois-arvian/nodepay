@@ -29,7 +29,7 @@ account_info = {}
 last_ping_time = {}
 
 # Static token
-STATIC_TOKEN = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIxMzA4NjQ5MzU5OTA2MTc3MDI0IiwiaWF0IjoxNzMyMDc2NzI4LCJleHAiOjE3MzMyODYzMjh9.OaMidnkWZDIqjfiCN2raksbfZGijP4iZx9PVAAG08XidD6ylhaDN0v8AEgZGKDgD7-TA917CBImFHB-gGxbDkw"  # Replace with your static token
+STATIC_TOKEN = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIxMzA4NjQ5MzU5OTA2MTc3MDI0IiwiaWF0IjoxNzMyMjExMDA4LCJleHAiOjE3MzM0MjA2MDh9.52gzBEV_u79ROx-_hyIy9bnoKMRLxxOx9vCRStOLjV2TtgzPMIgI9RdfLUEfk36pJrMNB_gkR3Y1-1cdV7SfaQ"  # Replace with your static token
 
 def uuidv4():
     return str(uuid.uuid4())
