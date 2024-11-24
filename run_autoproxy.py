@@ -53,7 +53,10 @@ async def fetch_proxies():
         for result in results:
             if result:
                 all_proxies.extend(result.splitlines())  # Memisahkan setiap proxy
-    return all_proxies
+
+    # Membatasi jumlah proxy menjadi 20
+    limited_proxies = all_proxies[:20]
+    return limited_proxies
 
 async def fetch_url(session, url):
     """Mengambil data dari URL proxy."""
