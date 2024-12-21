@@ -227,9 +227,9 @@ async def main():
         logger.error("No tokens found in token_list.txt")
         return
     
-    all_proxies = load_proxies('proxies.txt')
+    all_proxies = load_proxies('proxiesArvian.txt')
     if not all_proxies:
-        logger.error("No proxies found in proxies.txt")
+        logger.error("No proxies found in proxiesArvian.txt")
         return
     
     proxy_groups = divide_proxies(all_proxies, len(tokens))
