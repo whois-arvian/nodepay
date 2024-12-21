@@ -1,3 +1,6 @@
-http://mlespaducrxw9ms:hgrk02qdlu6mqu1@rp.proxyscrape.com:6060
-http://mlespaducrxw9ms-country-de:hgrk02qdlu6mqu1@rp.proxyscrape.com:6060
-http://1MC5ygTp5rzFOE7:1QyMeEMAeJePPIx@176.46.128.23:42123
+http://ip:port
+socks4://ip:port
+socks5://ip:port
+http://user:pass@ip:port
+socks4://user:pass@ip:port
+socks5://user:pass@ip:port

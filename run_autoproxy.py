@@ -1,3 +1,4 @@
+# https://github.com/im-hanzou/nodepay-automate
 import requests
 import asyncio
 import aiohttp
@@ -6,15 +7,22 @@ import uuid
 import cloudscraper
 from loguru import logger
 from fake_useragent import UserAgent
-import os
 
+def show_warning():
+    confirm = input("By using this tool means you understand the risks. do it at your own risk! \nPress Enter to continue or Ctrl+C to cancel... ")
+
+    if confirm.strip() == "":
+        print("Continuing...")
+    else:
+        print("Exiting...")
+        exit()
 # Constants
 PING_INTERVAL = 60
 RETRIES = 60
 
 DOMAIN_API = {
     "SESSION": "http://api.nodepay.ai/api/auth/session",
-    "PING": "http://18.142.29.174/api/network/ping"
+    "PING": "http://nw.nodepay.ai/api/network/ping"
 }
 
 CONNECTION_STATES = {
@@ -26,50 +34,19 @@ CONNECTION_STATES = {
 status_connect = CONNECTION_STATES["NONE_CONNECTION"]
 browser_id = None
 account_info = {}
-last_ping_time = {}
-
-# Static token
-STATIC_TOKEN = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIxMzA4NjQ5MzU5OTA2MTc3MDI0IiwiaWF0IjoxNzMyMjExMDA4LCJleHAiOjE3MzM0MjA2MDh9.52gzBEV_u79ROx-_hyIy9bnoKMRLxxOx9vCRStOLjV2TtgzPMIgI9RdfLUEfk36pJrMNB_gkR3Y1-1cdV7SfaQ"  # Replace with your static token
+last_ping_time = {}  
 
 def uuidv4():
     return str(uuid.uuid4())
-
+    
 def valid_resp(resp):
     if not resp or "code" not in resp or resp["code"] < 0:
         raise ValueError("Invalid response")
     return resp
-
-async def fetch_proxies():
-    """Mengambil proxy dari beberapa URL."""
-    proxy_urls = [
-        "https://raw.githubusercontent.com/whois-arvian/depin/refs/heads/main/proxies.txt",
-        "https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&proxy_format=protocolipport&format=text"
-    ]
-    all_proxies = []
-
-    async with aiohttp.ClientSession() as session:
-        tasks = [fetch_url(session, url) for url in proxy_urls]
-        results = await asyncio.gather(*tasks)
-        for result in results:
-            if result:
-                all_proxies.extend(result.splitlines())  # Memisahkan setiap proxy
-
-    # Membatasi jumlah proxy menjadi 20
-    limited_proxies = all_proxies[:20]
-    return limited_proxies
-
-async def fetch_url(session, url):
-    """Mengambil data dari URL proxy."""
-    try:
-        async with session.get(url) as response:
-            response.raise_for_status()
-            return await response.text()
-    except Exception as e:
-        logger.error(f"Failed to fetch proxies from {url}: {e}")
-        return ""
-
+    
 async def render_profile_info(proxy, token):
     global browser_id, account_info
+
     try:
         np_session_info = load_session_info(proxy)
 
@@ -116,7 +93,8 @@ async def call_api(url, data, proxy, token):
     try:
         scraper = cloudscraper.create_scraper()
 
-        response = scraper.post(url, json=data, headers=headers, proxies={ "http": proxy, "https": proxy }, timeout=30)
+        response = scraper.post(url, json=data, headers=headers, proxies={
+                                "http": proxy, "https": proxy}, timeout=30)
 
         response.raise_for_status()
         return valid_resp(response.json())
@@ -133,7 +111,7 @@ async def start_ping(proxy, token):
         logger.info(f"Ping task for proxy {proxy} was cancelled")
     except Exception as e:
         logger.error(f"Error in start_ping for proxy {proxy}: {e}")
-
+        
 async def ping(proxy, token):
     global last_ping_time, RETRIES, status_connect
 
@@ -148,7 +126,7 @@ async def ping(proxy, token):
     try:
         data = {
             "id": account_info.get("uid"),
-            "browser_id": browser_id,
+            "browser_id": browser_id,  
             "timestamp": int(time.time()),
             "version": "2.2.7"
         }
@@ -193,46 +171,36 @@ def load_proxies(proxy_file):
         raise SystemExit("Exiting due to failure in loading proxies")
 
 def save_status(proxy, status):
-    pass
+    pass  
 
 def save_session_info(proxy, data):
     data_to_save = {
         "uid": data.get("uid"),
-        "browser_id": browser_id
+        "browser_id": browser_id  
     }
     pass
 
 def load_session_info(proxy):
-    return {}
+    return {}  
 
 def is_valid_proxy(proxy):
-    return True
+    return True  
 
 def remove_proxy_from_list(proxy):
-    pass
+    pass  
 
 async def main():
-    # r = requests.get("https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&proxy_format=protocolipport&format=text", stream=True)
-    # if r.status_code == 200:
-    #     with open('auto_proxies.txt', 'wb') as f:
-    #         for chunk in r:
-    #             f.write(chunk)
-    # all_proxies = load_proxies('auto_proxies.txt')
-    
-    # Ambil semua proxy dari beberapa sumber
-    all_proxies = await fetch_proxies()
-    
-    # Simpan proxy ke file
-    with open('auto_proxies.txt', 'w') as f:
-        f.write("\n".join(all_proxies))
-    
-    logger.info(f"Saved {len(all_proxies)} proxies to auto_proxies.txt")
-    
-    # Load proxies dari file
-    all_proxies = load_proxies('auto_proxies.txt')
-    
-    # Static token is used here
-    token = STATIC_TOKEN
+    r = requests.get("https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&proxy_format=protocolipport&format=text", stream=True)
+    if r.status_code == 200:
+       with open('auto_proxies.txt', 'wb') as f:
+           for chunk in r:
+               f.write(chunk)
+    all_proxies = load_proxies('auto_proxies.txt')  
+    # Take token input directly from the user
+    token = input("Nodepay token: ").strip()
+    if not token:
+        print("Token cannot be empty. Exiting the program.")
+        exit()
 
     while True:
         active_proxies = [
@@ -260,9 +228,11 @@ async def main():
                 render_profile_info(proxy, token))
             tasks[new_task] = proxy
         await asyncio.sleep(3)
-    await asyncio.sleep(10)
+    await asyncio.sleep(10)  
 
 if __name__ == '__main__':
+    show_warning()
+    print("\nAlright, we here! Insert your nodepay token that you got from the tutorial.")
     try:
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
