@@ -21,8 +21,7 @@ CONNECTION_STATES = {
     "NONE_CONNECTION": 3
 }
 
-# Remove global variables that were shared across all batches
-# session variables will now be re-initialized for each batch
+# Session variables will now be re-initialized for each batch
 status_connect = CONNECTION_STATES["NONE_CONNECTION"]
 last_ping_time = {}  # Store ping times for each token
 
@@ -188,6 +187,10 @@ async def run_with_token(token):
 
     await asyncio.sleep(3)
 
+async def process_batch(batch_tokens):
+    tasks = [run_with_token(token) for token in batch_tokens]
+    await asyncio.gather(*tasks)
+
 async def main():
     # Load tokens from the file
     try:
@@ -210,12 +213,9 @@ async def main():
         batch_tokens = tokens[batch_index * BATCH_SIZE:(batch_index + 1) * BATCH_SIZE]
         logger.info(f"Processing batch {batch_index + 1}/{total_batches} with {len(batch_tokens)} tokens")
 
-        tasks = [run_with_token(token) for token in batch_tokens]
-        await asyncio.gather(*tasks)
+        await process_batch(batch_tokens)
 
         logger.info(f"Batch {batch_index + 1} completed.")
-
-        # Setelah batch selesai, jika masih ada token yang belum diproses, lanjutkan ke batch berikutnya
 
     logger.info("All batches processed successfully. Restarting...")  # After all batches are processed, restart the loop.
 
