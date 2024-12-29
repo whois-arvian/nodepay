@@ -180,6 +180,7 @@ def chunkify(input_list, chunk_size):
 async def process_batch(tokens_batch, batch_number, total_batches):
     tasks = []
     logger.info(f"Processing batch {batch_number} of {total_batches}, containing {len(tokens_batch)} tokens")
+    await asyncio.sleep(5)
 
     for token in tokens_batch:
         tasks.append(run_with_token(token))
