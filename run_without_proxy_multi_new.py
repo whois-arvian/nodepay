@@ -180,7 +180,7 @@ async def run_with_token(token):
             logger.info(f"Failed for token {failed_token}, retrying...")
         tasks.pop(task)
 
-    await asyncio.sleep(10)
+    await asyncio.sleep(3)
 
 async def main():
     # Load tokens from the file
@@ -196,7 +196,7 @@ async def main():
         return
 
     # Membagi tokens menjadi batch
-    BATCH_SIZE = 15  # Ukuran batch dapat disesuaikan
+    BATCH_SIZE = 20  # Ukuran batch dapat disesuaikan
     total_batches = math.ceil(len(tokens) / BATCH_SIZE)
     logger.info(f"Total tokens: {len(tokens)}, Batch size: {BATCH_SIZE}, Total batches: {total_batches}")
 
