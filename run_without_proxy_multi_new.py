@@ -1,4 +1,5 @@
 import asyncio
+import math
 import time
 import uuid
 import cloudscraper
@@ -179,14 +180,7 @@ async def run_with_token(token):
             logger.info(f"Failed for token {failed_token}, retrying...")
         tasks.pop(task)
 
-    await asyncio.sleep(5)
-
-async def run_with_token_batch(tokens, batch_size):
-    for i in range(0, len(tokens), batch_size):
-        batch = tokens[i:i + batch_size]
-        tasks = [run_with_token(token) for token in batch]
-        await asyncio.gather(*tasks)  # Menjalankan semua tugas dalam batch
-        logger.info(f"Batch {i // batch_size + 1} selesai diproses")
+    await asyncio.sleep(10)
 
 async def main():
     # Load tokens from the file
@@ -201,12 +195,27 @@ async def main():
         print("No tokens found. Exiting.")
         return
 
-    batch_size = 20  # Jumlah token yang diproses dalam satu waktu
-    await run_with_token_batch(tokens, batch_size)
+    # Membagi tokens menjadi batch
+    BATCH_SIZE = 15  # Ukuran batch dapat disesuaikan
+    total_batches = math.ceil(len(tokens) / BATCH_SIZE)
+    logger.info(f"Total tokens: {len(tokens)}, Batch size: {BATCH_SIZE}, Total batches: {total_batches}")
+
+    for batch_index in range(total_batches):
+        batch_tokens = tokens[batch_index * BATCH_SIZE:(batch_index + 1) * BATCH_SIZE]
+        logger.info(f"Processing batch {batch_index + 1}/{total_batches} with {len(batch_tokens)} tokens")
+
+        tasks = [run_with_token(token) for token in batch_tokens]
+        await asyncio.gather(*tasks)
+
+        if batch_index < total_batches - 1:
+            logger.info(f"Batch {batch_index + 1} completed. Waiting before processing the next batch...")
+            await asyncio.sleep(3)  # Waktu jeda antar batch
+
+    logger.info("All batches processed successfully.")
 
 if __name__ == '__main__':
     show_warning()
-    print("\nAlright, we here! The tool will now use multiple tokens in batches.")
+    print("\nAlright, we here! The tool will now use multiple tokens without proxies.")
     try:
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
