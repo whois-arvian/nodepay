@@ -179,7 +179,7 @@ async def run_with_token(token):
             logger.info(f"Failed for token {failed_token}, retrying...")
         tasks.pop(task)
 
-    await asyncio.sleep(10)
+    await asyncio.sleep(5)
 
 async def run_with_token_batch(tokens, batch_size):
     for i in range(0, len(tokens), batch_size):
@@ -201,7 +201,7 @@ async def main():
         print("No tokens found. Exiting.")
         return
 
-    batch_size = 5  # Jumlah token yang diproses dalam satu waktu
+    batch_size = 20  # Jumlah token yang diproses dalam satu waktu
     await run_with_token_batch(tokens, batch_size)
 
 if __name__ == '__main__':
