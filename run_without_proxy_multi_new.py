@@ -8,6 +8,8 @@ from fake_useragent import UserAgent
 # Constants
 PING_INTERVAL = 60
 RETRIES = 60
+MAX_CONCURRENT_REQUESTS = 40  # Batasi jumlah permintaan paralel
+BACKOFF_FACTOR = 1.5  # Faktor backoff untuk retry
 
 DOMAIN_API = {
     "SESSION": "http://api.nodepay.ai/api/auth/session",
@@ -27,6 +29,7 @@ last_ping_time = {}  # Store ping times for each token
 
 def show_warning():
     confirm = input("By using this tool means you understand the risks. do it at your own risk! \nPress Enter to continue or Ctrl+C to cancel... ")
+
     if confirm.strip() == "":
         print("Continuing...")
     else:
@@ -43,12 +46,14 @@ def valid_resp(resp):
 
 async def render_profile_info(token):
     global browser_id, account_info
+
     try:
         np_session_info = load_session_info()
+
         if not np_session_info:
             # Generate new browser_id
             browser_id = uuidv4()
-            response = await call_api(DOMAIN_API["SESSION"], {}, token)
+            response = await call_api_with_retry(DOMAIN_API["SESSION"], {}, token)
             valid_resp(response)
             account_info = response["data"]
             if account_info.get("uid"):
@@ -72,6 +77,21 @@ async def render_profile_info(token):
             logger.error(f"Connection error: {e}")
             return None
 
+async def call_api_with_retry(url, data, token, retries=5, backoff_factor=BACKOFF_FACTOR):
+    attempt = 0
+    while attempt < retries:
+        try:
+            return await call_api(url, data, token)
+        except ValueError as e:
+            logger.warning(f"Attempt {attempt + 1} failed for {token}: {e}")
+            if attempt < retries - 1:
+                wait_time = backoff_factor ** attempt
+                logger.info(f"Retrying in {wait_time} seconds...")
+                await asyncio.sleep(wait_time)
+            attempt += 1
+    logger.error(f"All retries failed for {token}. Giving up.")
+    return None
+
 async def call_api(url, data, token):
     user_agent = UserAgent(os=['windows', 'macos', 'linux'], browsers='chrome')
     random_user_agent = user_agent.random
@@ -86,7 +106,9 @@ async def call_api(url, data, token):
 
     try:
         scraper = cloudscraper.create_scraper()
+
         response = scraper.post(url, json=data, headers=headers, timeout=30)
+
         response.raise_for_status()
         return valid_resp(response.json())
     except Exception as e:
@@ -102,9 +124,10 @@ async def start_ping(token):
         logger.info(f"Ping task was cancelled")
     except Exception as e:
         logger.error(f"Error in start_ping: {e}")
-        
+
 async def ping(token):
     global last_ping_time, RETRIES, status_connect
+
     current_time = time.time()
 
     # Check if the token has a separate last ping time and if enough time has passed
@@ -122,8 +145,8 @@ async def ping(token):
             "version": "2.2.7"
         }
 
-        response = await call_api(DOMAIN_API["PING"], data, token)
-        if response["code"] == 0:
+        response = await call_api_with_retry(DOMAIN_API["PING"], data, token)
+        if response and response.get("code") == 0:
             logger.info(f"Ping successful for token {token}: {response}")
             RETRIES = 0
             status_connect = CONNECTION_STATES["CONNECTED"]
@@ -135,6 +158,7 @@ async def ping(token):
 
 def handle_ping_fail(response):
     global RETRIES, status_connect
+
     RETRIES += 1
     if response and response.get("code") == 403:
         handle_logout()
@@ -145,6 +169,7 @@ def handle_ping_fail(response):
 
 def handle_logout():
     global status_connect, account_info
+
     status_connect = CONNECTION_STATES["NONE_CONNECTION"]
     account_info = {}
     logger.info(f"Logged out and cleared session info")
@@ -159,11 +184,21 @@ def save_session_info(data):
 def load_session_info():
     return {}  # Placeholder for loading session info
 
-async def run_with_token(token):
-    try:
-        await render_profile_info(token)
-    except Exception as e:
-        logger.error(f"Error with token {token}: {e}")
+async def run_with_token(token, semaphore):
+    async with semaphore:
+        tasks = {}
+
+        tasks[asyncio.create_task(render_profile_info(token))] = token
+
+        done, pending = await asyncio.wait(tasks.keys(), return_when=asyncio.FIRST_COMPLETED)
+        for task in done:
+            failed_token = tasks[task]
+            if task.result() is None:
+                logger.info(f"Failed for token {failed_token}, retrying...")
+            tasks.pop(task)
+
+        # Menambahkan waktu tunggu di antara setiap token
+        await asyncio.sleep(10)
 
 async def main():
     try:
@@ -177,9 +212,12 @@ async def main():
         print("No tokens found. Exiting.")
         return
 
-    tasks = [run_with_token(token) for token in tokens]
+    tasks = []
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)  # Semaphore untuk membatasi permintaan paralel
+    for token in tokens:
+        tasks.append(run_with_token(token, semaphore))
 
-    # Run all tasks concurrently
+    # Jalankan semua tugas secara bersamaan
     await asyncio.gather(*tasks)
 
 if __name__ == '__main__':
