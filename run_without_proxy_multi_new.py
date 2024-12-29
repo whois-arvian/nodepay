@@ -191,30 +191,32 @@ async def process_batch(tokens_batch, batch_number, total_batches):
     logger.info(f"Finished processing batch {batch_number}")  # Log batch finished
 
 async def main():
-    try:
-        with open('token_list.txt', 'r') as file:
-            tokens = file.read().splitlines()
-    except Exception as e:
-        logger.error(f"Error reading token list: {e}")
-        return
+    while True:  # Loop to keep processing batches continuously
+        try:
+            with open('token_list.txt', 'r') as file:
+                tokens = file.read().splitlines()
+        except Exception as e:
+            logger.error(f"Error reading token list: {e}")
+            return
 
-    if not tokens:
-        print("No tokens found. Exiting.")
-        return
+        if not tokens:
+            print("No tokens found. Exiting.")
+            return
 
-    # Ensure that we have more than 20 tokens
-    total_batches = (len(tokens) // BATCH_SIZE) + (1 if len(tokens) % BATCH_SIZE > 0 else 0)
+        # Ensure that we have more than 20 tokens
+        total_batches = (len(tokens) // BATCH_SIZE) + (1 if len(tokens) % BATCH_SIZE > 0 else 0)
 
-    logger.info(f"Total tokens: {len(tokens)}")
-    logger.info(f"Total batches: {total_batches}")
+        logger.info(f"Total tokens: {len(tokens)}")
+        logger.info(f"Total batches: {total_batches}")
 
-    # Process tokens in batches of BATCH_SIZE (20 tokens per batch)
-    for i, batch in enumerate(chunkify(tokens, BATCH_SIZE)):
-        batch_number = i + 1
-        logger.info(f"Starting batch {batch_number} of {total_batches}, containing {len(batch)} tokens")
-        await process_batch(batch, batch_number, total_batches)  # process batch by batch
-        logger.info(f"Finished processing batch {batch_number}")
-        await asyncio.sleep(2)  # Delay antar batch (jika perlu)
+        # Process tokens in batches of BATCH_SIZE (20 tokens per batch)
+        for i, batch in enumerate(chunkify(tokens, BATCH_SIZE)):
+            batch_number = i + 1
+            logger.info(f"Starting batch {batch_number} of {total_batches}, containing {len(batch)} tokens")
+            await process_batch(batch, batch_number, total_batches)  # process batch by batch
+            logger.info(f"Finished processing batch {batch_number}")
+            await asyncio.sleep(2)  # Delay antar batch (jika perlu)
+        logger.info("Restarting batch process after completion...")  # Restart after finishing all batches
 
 if __name__ == '__main__':
     show_warning()
