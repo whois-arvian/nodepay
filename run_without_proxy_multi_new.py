@@ -213,11 +213,11 @@ async def main():
         tasks = [run_with_token(token) for token in batch_tokens]
         await asyncio.gather(*tasks)
 
-        if batch_index < total_batches - 1:
-            logger.info(f"Batch {batch_index + 1} completed. Waiting before processing the next batch...")
-            await asyncio.sleep(3)  # Waktu jeda antar batch
+        logger.info(f"Batch {batch_index + 1} completed.")
 
-    logger.info("All batches processed successfully.")
+        # Setelah batch selesai, jika masih ada token yang belum diproses, lanjutkan ke batch berikutnya
+
+    logger.info("All batches processed successfully. Restarting...")  # After all batches are processed, restart the loop.
 
 if __name__ == '__main__':
     show_warning()
