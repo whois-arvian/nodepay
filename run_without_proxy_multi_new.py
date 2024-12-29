@@ -185,6 +185,12 @@ def save_session_info(data):
 def load_session_info():
     return {}  # Placeholder for loading session info
 
+def chunkify(input_list, chunk_size):
+    start = 0
+    while start < len(input_list):
+        yield input_list[start:start + chunk_size]
+        start += chunk_size
+
 async def process_batch(tokens_batch):
     tasks = []
     logger.info(f"Processing batch of {len(tokens_batch)} tokens")
@@ -211,8 +217,7 @@ async def main():
         return
 
     # Process tokens in batches of BATCH_SIZE
-    for i in range(0, len(tokens), BATCH_SIZE):
-        batch = tokens[i:i + BATCH_SIZE]
+    for batch in chunkify(tokens, BATCH_SIZE):
         await process_batch(batch)
 
 if __name__ == '__main__':
