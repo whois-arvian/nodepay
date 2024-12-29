@@ -57,12 +57,12 @@ async def render_profile_info(token):
             account_info = response["data"]
             if account_info.get("uid"):
                 save_session_info(account_info)
-                await start_ping(token)
+                await start_ping(token)  # Start pinging in background
             else:
                 handle_logout()
         else:
             account_info = np_session_info
-            await start_ping(token)
+            await start_ping(token)  # Start pinging in background
     except Exception as e:
         logger.error(f"Error in render_profile_info: {e}")
         error_message = str(e)
@@ -101,9 +101,10 @@ async def call_api(url, data, token):
 
 async def start_ping(token):
     try:
-        while True:
-            await ping(token)
-            await asyncio.sleep(PING_INTERVAL)
+        logger.info(f"Started pinging for token {token}")
+        # Create a separate task for the ping process so it can run in background
+        ping_task = asyncio.create_task(ping(token))
+        await ping_task
     except asyncio.CancelledError:
         logger.info(f"Ping task was cancelled")
     except Exception as e:
