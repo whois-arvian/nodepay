@@ -8,9 +8,7 @@ from fake_useragent import UserAgent
 # Constants
 PING_INTERVAL = 60
 RETRIES = 60
-MAX_CONCURRENT_REQUESTS = 20  # Set to process only 20 tokens concurrently
-BACKOFF_FACTOR = 1.5  # Backoff for retries
-BATCH_SIZE = 20  # Size of each batch to process at a time
+BATCH_SIZE = 20  # Ukuran batch
 
 DOMAIN_API = {
     "SESSION": "http://api.nodepay.ai/api/auth/session",
@@ -39,7 +37,7 @@ def show_warning():
 
 def uuidv4():
     return str(uuid.uuid4())
-
+    
 def valid_resp(resp):
     if not resp or "code" not in resp or resp["code"] < 0:
         raise ValueError("Invalid response")
@@ -54,7 +52,7 @@ async def render_profile_info(token):
         if not np_session_info:
             # Generate new browser_id
             browser_id = uuidv4()
-            response = await call_api_with_retry(DOMAIN_API["SESSION"], {}, token)
+            response = await call_api(DOMAIN_API["SESSION"], {}, token)
             valid_resp(response)
             account_info = response["data"]
             if account_info.get("uid"):
@@ -77,21 +75,6 @@ async def render_profile_info(token):
         else:
             logger.error(f"Connection error: {e}")
             return None
-
-async def call_api_with_retry(url, data, token, retries=5, backoff_factor=BACKOFF_FACTOR):
-    attempt = 0
-    while attempt < retries:
-        try:
-            return await call_api(url, data, token)
-        except ValueError as e:
-            logger.warning(f"Attempt {attempt + 1} failed for {token}: {e}")
-            if attempt < retries - 1:
-                wait_time = backoff_factor ** attempt
-                logger.info(f"Retrying in {wait_time} seconds...")
-                await asyncio.sleep(wait_time)
-            attempt += 1
-    logger.error(f"All retries failed for {token}. Giving up.")
-    return None
 
 async def call_api(url, data, token):
     user_agent = UserAgent(os=['windows', 'macos', 'linux'], browsers='chrome')
@@ -125,7 +108,7 @@ async def start_ping(token):
         logger.info(f"Ping task was cancelled")
     except Exception as e:
         logger.error(f"Error in start_ping: {e}")
-
+        
 async def ping(token):
     global last_ping_time, RETRIES, status_connect
 
@@ -146,8 +129,8 @@ async def ping(token):
             "version": "2.2.7"
         }
 
-        response = await call_api_with_retry(DOMAIN_API["PING"], data, token)
-        if response and response.get("code") == 0:
+        response = await call_api(DOMAIN_API["PING"], data, token)
+        if response["code"] == 0:
             logger.info(f"Ping successful for token {token}: {response}")
             RETRIES = 0
             status_connect = CONNECTION_STATES["CONNECTED"]
@@ -185,6 +168,20 @@ def save_session_info(data):
 def load_session_info():
     return {}  # Placeholder for loading session info
 
+async def run_with_token(token):
+    tasks = {}
+
+    tasks[asyncio.create_task(render_profile_info(token))] = token
+
+    done, pending = await asyncio.wait(tasks.keys(), return_when=asyncio.FIRST_COMPLETED)
+    for task in done:
+        failed_token = tasks[task]
+        if task.result() is None:
+            logger.info(f"Failed for token {failed_token}, retrying...")
+        tasks.pop(task)
+
+    await asyncio.sleep(10)
+
 def chunkify(input_list, chunk_size):
     start = 0
     while start < len(input_list):
@@ -201,9 +198,6 @@ async def process_batch(tokens_batch):
     # Process the batch concurrently
     await asyncio.gather(*tasks)
 
-async def run_with_token(token):
-    await render_profile_info(token)
-
 async def main():
     try:
         with open('token_list.txt', 'r') as file:
@@ -217,9 +211,10 @@ async def main():
         return
 
     # Process tokens in batches of BATCH_SIZE
+    total_batches = len(tokens) // BATCH_SIZE + (1 if len(tokens) % BATCH_SIZE else 0)
     for i, batch in enumerate(chunkify(tokens, BATCH_SIZE)):
-        logger.info(f"Running batch {i + 1} of {len(tokens) // BATCH_SIZE + (1 if len(tokens) % BATCH_SIZE else 0)}")
-        await process_batch(batch)
+        logger.info(f"Running batch {i + 1} of {total_batches}")
+        await process_batch(batch)  # process batch by batch
 
 if __name__ == '__main__':
     show_warning()
