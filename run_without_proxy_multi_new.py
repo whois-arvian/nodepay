@@ -8,9 +8,9 @@ from fake_useragent import UserAgent
 # Constants
 PING_INTERVAL = 60
 RETRIES = 60
-MAX_CONCURRENT_REQUESTS = 20  # Batasi jumlah permintaan paralel per batch
+MAX_CONCURRENT_REQUESTS = 20  # Setel agar semua token diproses sekaligus
 BACKOFF_FACTOR = 5  # Faktor backoff untuk retry
-BATCH_SIZE = 10  # Ukuran batch untuk setiap pemrosesan token
+BATCH_SIZE = 20  # Ukuran batch untuk memproses semua token sekaligus
 
 DOMAIN_API = {
     "SESSION": "http://api.nodepay.ai/api/auth/session",
@@ -39,7 +39,7 @@ def show_warning():
 
 def uuidv4():
     return str(uuid.uuid4())
-    
+
 def valid_resp(resp):
     if not resp or "code" not in resp or resp["code"] < 0:
         raise ValueError("Invalid response")
@@ -185,12 +185,15 @@ def save_session_info(data):
 def load_session_info():
     return {}  # Placeholder for loading session info
 
-async def process_token_batch(batch, semaphore):
-    async with semaphore:
-        tasks = []
-        for token in batch:
-            tasks.append(run_with_token(token))
-        await asyncio.gather(*tasks)
+async def process_all_tokens(tokens):
+    tasks = []
+    logger.info(f"Processing {len(tokens)} tokens")
+
+    for token in tokens:
+        tasks.append(run_with_token(token))
+    
+    # Menjalankan semua token sekaligus
+    await asyncio.gather(*tasks)
 
 async def run_with_token(token):
     await render_profile_info(token)
@@ -207,21 +210,8 @@ async def main():
         print("No tokens found. Exiting.")
         return
 
-    semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)  # Semaphore untuk membatasi permintaan paralel
-    batch_start = 0
-
-    # Proses batch secara bertahap
-    while batch_start < len(tokens):
-        batch_end = batch_start + BATCH_SIZE
-        batch = tokens[batch_start:batch_end]
-        logger.info(f"Processing batch {batch_start // BATCH_SIZE + 1} with {len(batch)} tokens")
-        await process_token_batch(batch, semaphore)
-        
-        # Update batch_start untuk memastikan batch berikutnya diambil dengan benar
-        batch_start = batch_end
-        
-        # Menunggu sebentar antara batch
-        await asyncio.sleep(5)  # Delay antar batch
+    # Proses semua token sekaligus
+    await process_all_tokens(tokens)
 
 if __name__ == '__main__':
     show_warning()
