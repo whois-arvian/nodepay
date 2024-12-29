@@ -8,7 +8,7 @@ from fake_useragent import UserAgent
 # Constants
 PING_INTERVAL = 60
 RETRIES = 60
-BATCH_SIZE = 20  # Ukuran batch
+BATCH_SIZE = 20  # Ukuran batch yang akan diproses per waktu
 
 DOMAIN_API = {
     "SESSION": "http://api.nodepay.ai/api/auth/session",
@@ -199,7 +199,7 @@ async def main():
         print("No tokens found. Exiting.")
         return
 
-    # Process tokens in batches of BATCH_SIZE
+    # Process tokens in batches of BATCH_SIZE (20 tokens per batch)
     total_batches = len(tokens) // BATCH_SIZE + (1 if len(tokens) % BATCH_SIZE else 0)
     for i, batch in enumerate(chunkify(tokens, BATCH_SIZE)):
         logger.info(f"Running batch {i + 1} of {total_batches}")
