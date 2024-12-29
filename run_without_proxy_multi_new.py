@@ -180,7 +180,6 @@ def chunkify(input_list, chunk_size):
 async def process_batch(tokens_batch, batch_number, total_batches):
     tasks = []
     logger.info(f"Processing batch {batch_number} of {total_batches}, containing {len(tokens_batch)} tokens")
-    await asyncio.sleep(2)  # Delay
 
     for token in tokens_batch:
         tasks.append(run_with_token(token))
@@ -200,12 +199,18 @@ async def main():
         print("No tokens found. Exiting.")
         return
 
+    # Ensure that we have more than 20 tokens
+    total_batches = (len(tokens) // BATCH_SIZE) + (1 if len(tokens) % BATCH_SIZE > 0 else 0)
+
+    logger.info(f"Total tokens: {len(tokens)}")
+    logger.info(f"Total batches: {total_batches}")
+
     # Process tokens in batches of BATCH_SIZE (20 tokens per batch)
-    total_batches = len(tokens) // BATCH_SIZE + (1 if len(tokens) % BATCH_SIZE else 0)
     for i, batch in enumerate(chunkify(tokens, BATCH_SIZE)):
         batch_number = i + 1
-        logger.info(f"Starting batch {batch_number} of {total_batches}")
+        logger.info(f"Starting batch {batch_number} of {total_batches}, containing {len(batch)} tokens")
         await process_batch(batch, batch_number, total_batches)  # process batch by batch
+        logger.info(f"Finished processing batch {batch_number}")
         await asyncio.sleep(2)  # Delay antar batch (jika perlu)
 
 if __name__ == '__main__':
