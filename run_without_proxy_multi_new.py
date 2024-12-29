@@ -217,7 +217,8 @@ async def main():
         return
 
     # Process tokens in batches of BATCH_SIZE
-    for batch in chunkify(tokens, BATCH_SIZE):
+    for i, batch in enumerate(chunkify(tokens, BATCH_SIZE)):
+        logger.info(f"Running batch {i + 1} of {len(tokens) // BATCH_SIZE + (1 if len(tokens) % BATCH_SIZE else 0)}")
         await process_batch(batch)
 
 if __name__ == '__main__':
