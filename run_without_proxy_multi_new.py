@@ -8,9 +8,9 @@ from fake_useragent import UserAgent
 # Constants
 PING_INTERVAL = 60
 RETRIES = 60
-MAX_CONCURRENT_REQUESTS = 20  # Setel agar semua token diproses sekaligus
-BACKOFF_FACTOR = 5  # Faktor backoff untuk retry
-BATCH_SIZE = 20  # Ukuran batch untuk memproses semua token sekaligus
+MAX_CONCURRENT_REQUESTS = 20  # Set to process only 20 tokens concurrently
+BACKOFF_FACTOR = 1.5  # Backoff for retries
+BATCH_SIZE = 20  # Size of each batch to process at a time
 
 DOMAIN_API = {
     "SESSION": "http://api.nodepay.ai/api/auth/session",
@@ -185,14 +185,14 @@ def save_session_info(data):
 def load_session_info():
     return {}  # Placeholder for loading session info
 
-async def process_all_tokens(tokens):
+async def process_batch(tokens_batch):
     tasks = []
-    logger.info(f"Processing {len(tokens)} tokens")
+    logger.info(f"Processing batch of {len(tokens_batch)} tokens")
 
-    for token in tokens:
+    for token in tokens_batch:
         tasks.append(run_with_token(token))
     
-    # Menjalankan semua token sekaligus
+    # Process the batch concurrently
     await asyncio.gather(*tasks)
 
 async def run_with_token(token):
@@ -210,8 +210,10 @@ async def main():
         print("No tokens found. Exiting.")
         return
 
-    # Proses semua token sekaligus
-    await process_all_tokens(tokens)
+    # Process tokens in batches of BATCH_SIZE
+    for i in range(0, len(tokens), BATCH_SIZE):
+        batch = tokens[i:i + BATCH_SIZE]
+        await process_batch(batch)
 
 if __name__ == '__main__':
     show_warning()
