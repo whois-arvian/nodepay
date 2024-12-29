@@ -187,6 +187,7 @@ async def process_batch(tokens_batch, batch_number, total_batches):
     
     # Process the batch concurrently
     await asyncio.gather(*tasks)
+    logger.info(f"Finished processing batch {batch_number}")  # Log batch finished
 
 async def main():
     try:
