@@ -8,8 +8,9 @@ from fake_useragent import UserAgent
 # Constants
 PING_INTERVAL = 60
 RETRIES = 60
-MAX_CONCURRENT_REQUESTS = 20  # Batasi jumlah permintaan paralel
+MAX_CONCURRENT_REQUESTS = 20  # Batasi jumlah permintaan paralel per batch
 BACKOFF_FACTOR = 5  # Faktor backoff untuk retry
+BATCH_SIZE = 10  # Ukuran batch untuk setiap pemrosesan token
 
 DOMAIN_API = {
     "SESSION": "http://api.nodepay.ai/api/auth/session",
@@ -184,21 +185,15 @@ def save_session_info(data):
 def load_session_info():
     return {}  # Placeholder for loading session info
 
-async def run_with_token(token, semaphore):
+async def process_token_batch(batch, semaphore):
     async with semaphore:
-        tasks = {}
+        tasks = []
+        for token in batch:
+            tasks.append(run_with_token(token))
+        await asyncio.gather(*tasks)
 
-        tasks[asyncio.create_task(render_profile_info(token))] = token
-
-        done, pending = await asyncio.wait(tasks.keys(), return_when=asyncio.FIRST_COMPLETED)
-        for task in done:
-            failed_token = tasks[task]
-            if task.result() is None:
-                logger.info(f"Failed for token {failed_token}, retrying...")
-            tasks.pop(task)
-
-        # Menambahkan waktu tunggu di antara setiap token
-        await asyncio.sleep(10)
+async def run_with_token(token):
+    await render_profile_info(token)
 
 async def main():
     try:
@@ -212,13 +207,21 @@ async def main():
         print("No tokens found. Exiting.")
         return
 
-    tasks = []
     semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)  # Semaphore untuk membatasi permintaan paralel
-    for token in tokens:
-        tasks.append(run_with_token(token, semaphore))
+    batch_start = 0
 
-    # Jalankan semua tugas secara bersamaan
-    await asyncio.gather(*tasks)
+    # Proses batch secara bertahap
+    while batch_start < len(tokens):
+        batch_end = batch_start + BATCH_SIZE
+        batch = tokens[batch_start:batch_end]
+        logger.info(f"Processing batch {batch_start // BATCH_SIZE + 1} with {len(batch)} tokens")
+        await process_token_batch(batch, semaphore)
+        
+        # Update batch_start untuk memastikan batch berikutnya diambil dengan benar
+        batch_start = batch_end
+        
+        # Menunggu sebentar antara batch
+        await asyncio.sleep(5)  # Delay antar batch
 
 if __name__ == '__main__':
     show_warning()
