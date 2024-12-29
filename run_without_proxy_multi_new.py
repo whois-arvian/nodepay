@@ -169,18 +169,7 @@ def load_session_info():
     return {}  # Placeholder for loading session info
 
 async def run_with_token(token):
-    tasks = {}
-
-    tasks[asyncio.create_task(render_profile_info(token))] = token
-
-    done, pending = await asyncio.wait(tasks.keys(), return_when=asyncio.FIRST_COMPLETED)
-    for task in done:
-        failed_token = tasks[task]
-        if task.result() is None:
-            logger.info(f"Failed for token {failed_token}, retrying...")
-        tasks.pop(task)
-
-    await asyncio.sleep(10)
+    await render_profile_info(token)
 
 def chunkify(input_list, chunk_size):
     start = 0
