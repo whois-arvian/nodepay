@@ -8,7 +8,7 @@ from fake_useragent import UserAgent
 # Constants
 PING_INTERVAL = 60
 RETRIES = 60
-BATCH_SIZE = 20  # Ukuran batch yang akan diproses per waktu
+BATCH_SIZE = 15  # Ukuran batch yang akan diproses per waktu
 
 DOMAIN_API = {
     "SESSION": "http://api.nodepay.ai/api/auth/session",
@@ -181,7 +181,7 @@ def chunkify(input_list, chunk_size):
 async def process_batch(tokens_batch, batch_number, total_batches):
     tasks = []
     logger.info(f"Processing batch {batch_number} of {total_batches}, containing {len(tokens_batch)} tokens")
-    await asyncio.sleep(5)
+    await asyncio.sleep(10)
 
     for token in tokens_batch:
         tasks.append(run_with_token(token))
