@@ -8,8 +8,8 @@ from fake_useragent import UserAgent
 # Constants
 PING_INTERVAL = 60
 RETRIES = 60
-MAX_CONCURRENT_REQUESTS = 40  # Batasi jumlah permintaan paralel
-BACKOFF_FACTOR = 1.5  # Faktor backoff untuk retry
+MAX_CONCURRENT_REQUESTS = 20  # Batasi jumlah permintaan paralel
+BACKOFF_FACTOR = 5  # Faktor backoff untuk retry
 
 DOMAIN_API = {
     "SESSION": "http://api.nodepay.ai/api/auth/session",
