@@ -7,8 +7,8 @@ from loguru import logger
 from fake_useragent import UserAgent
 
 # Constants
-PING_INTERVAL = 60
-RETRIES = 60
+PING_INTERVAL = 30
+RETRIES = 30
 
 DOMAIN_API = {
     "SESSION": "http://api.nodepay.ai/api/auth/session",
