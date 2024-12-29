@@ -21,9 +21,9 @@ CONNECTION_STATES = {
     "NONE_CONNECTION": 3
 }
 
+# Remove global variables that were shared across all batches
+# session variables will now be re-initialized for each batch
 status_connect = CONNECTION_STATES["NONE_CONNECTION"]
-browser_id = None
-account_info = {}
 last_ping_time = {}  # Store ping times for each token
 
 def show_warning():
@@ -44,25 +44,28 @@ def valid_resp(resp):
     return resp
 
 async def render_profile_info(token):
-    global browser_id, account_info
+    global status_connect, last_ping_time
+
+    # Initialize session variables locally
+    browser_id = uuidv4()
+    account_info = {}
 
     try:
         np_session_info = load_session_info()
 
         if not np_session_info:
             # Generate new browser_id
-            browser_id = uuidv4()
             response = await call_api(DOMAIN_API["SESSION"], {}, token)
             valid_resp(response)
             account_info = response["data"]
             if account_info.get("uid"):
                 save_session_info(account_info)
-                await start_ping(token)
+                await start_ping(token, browser_id, account_info)
             else:
                 handle_logout()
         else:
             account_info = np_session_info
-            await start_ping(token)
+            await start_ping(token, browser_id, account_info)
     except Exception as e:
         logger.error(f"Error in render_profile_info: {e}")
         error_message = str(e)
@@ -99,17 +102,17 @@ async def call_api(url, data, token):
         logger.error(f"Error during API call: {e}")
         raise ValueError(f"Failed API call to {url}")
 
-async def start_ping(token):
+async def start_ping(token, browser_id, account_info):
     try:
         while True:
-            await ping(token)
+            await ping(token, browser_id, account_info)
             await asyncio.sleep(PING_INTERVAL)
     except asyncio.CancelledError:
         logger.info(f"Ping task was cancelled")
     except Exception as e:
         logger.error(f"Error in start_ping: {e}")
         
-async def ping(token):
+async def ping(token, browser_id, account_info):
     global last_ping_time, RETRIES, status_connect
 
     current_time = time.time()
@@ -152,16 +155,15 @@ def handle_ping_fail(response):
         status_connect = CONNECTION_STATES["DISCONNECTED"]
 
 def handle_logout():
-    global status_connect, account_info
+    global status_connect
 
     status_connect = CONNECTION_STATES["NONE_CONNECTION"]
-    account_info = {}
     logger.info(f"Logged out and cleared session info")
 
 def save_session_info(data):
     data_to_save = {
         "uid": data.get("uid"),
-        "browser_id": browser_id  
+        "browser_id": data.get("browser_id")  
     }
     pass
 
@@ -169,6 +171,10 @@ def load_session_info():
     return {}  # Placeholder for loading session info
 
 async def run_with_token(token):
+    # Move session variables inside run_with_token
+    browser_id = uuidv4()
+    account_info = {}
+
     tasks = {}
 
     tasks[asyncio.create_task(render_profile_info(token))] = token
